@@ -141,7 +141,7 @@ chroot(){
     export PS1="(chroot) ${PS1}"
     # mount $BOOTPARTITION /boot
     emerge-webrsync
-    emerge --ask --verbose --update --deep --newuse @world
+    emerge --verbose --update --deep --newuse @world
 EOCHROOT
 }
 
