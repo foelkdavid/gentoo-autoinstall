@@ -76,7 +76,8 @@ format_disk(){
     BOOTPARTITION=$(fdisk -l $SYSTEMDISK | grep $SYSTEMDISK | sed 1d | awk '{print $1}' | sed -n "2p")
     SWAPPARTITION=$(fdisk -l $SYSTEMDISK | grep $SYSTEMDISK | sed 1d | awk '{print $1}' | sed -n "3p")
     ROOTPARTITION=$(fdisk -l $SYSTEMDISK | grep $SYSTEMDISK | sed 1d | awk '{print $1}' | sed -n "4p")
-}
+mkfs.fat -F32 $EFIPARTITION
+  }
 
 
 setup_zfs(){
@@ -114,7 +115,7 @@ stage3Download() {
 chroot_preparation(){
     cd /mnt/gentoo
     mkdir boot/efi
-    mount $BOOTPARTITION boot/efi
+    mount $EFIPARTITION boot/efi
 
     stage3Download
     tar xpvf stage3-amd64-$SUFFIX-*.tar.xz --xattrs-include='*.*' --numeric-owner --directory /mnt/gentoo/
@@ -141,7 +142,7 @@ chroot(){
     # mount $BOOTPARTITION /boot
     emerge-webrsync
     emerge --ask --verbose --update --deep --newuse @world
-    EOCHROOT
+EOCHROOT
 }
 
 rootcheck
