@@ -112,7 +112,7 @@ stage3Download() {
 	wget -q --show-progress "${DIST}/${STAGE3PATH}"
 }
 
-chroot_preparation(){
+chroot_preparation_old(){
     cd /mnt/gentoo
     mkdir boot/efi
     mount $EFIPARTITION boot/efi
@@ -135,7 +135,7 @@ chroot_preparation(){
     mount --make-rslave sys
 }
 
-chroot(){
+chroot_OLD(){
     chroot /mnt/gentoo /bin/bash -- << EOCHROOT
     source /etc/profile
     export PS1="(chroot) ${PS1}"
@@ -144,6 +144,41 @@ chroot(){
     emerge --verbose --update --deep --newuse @world
 EOCHROOT
 }
+
+chroot_preparation(){
+    cd /mnt/gentoo
+    mkdir boot/efi
+    mount $BOOTPARTITION boot/efi
+    stage3Download
+    tar xpf stage3-amd64-$SUFFIX-*.tar.xz
+    
+    # copy zfs pool
+    mkdir etc/zfs
+    cp /etc/zfs/zpool.cache etc/zfs
+
+    # copy networking settings
+    cp /etc/resolv.conf etc/
+
+    # mount devices
+    mount --rbind /dev dev
+    mount --rbind /proc proc
+    mount --rbind /sys sys
+    mount --make-rslave dev
+    mount --make-rslave proc
+    mount --make-rslave sys
+
+}
+
+# chroot(){
+# #     chroot /mnt/gentoo /bin/bash -- << EOCHROOT
+# #     source /etc/profile
+# #     export PS1="(chroot) ${PS1}"
+# #     # mount $BOOTPARTITION /boot
+# #     emerge-webrsync
+# #     emerge --verbose --update --deep --newuse @world
+# # EOCHROOT
+# }
+
 
 rootcheck
 
