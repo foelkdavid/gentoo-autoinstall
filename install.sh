@@ -148,7 +148,7 @@ EOCHROOT
 chroot_preparation(){
     cd /mnt/gentoo
     mkdir boot/efi
-    mount $BOOTPARTITION boot/efi
+    mount $EFIPARTITION boot/efi
     stage3Download
     tar xpf stage3-amd64-$SUFFIX-*.tar.xz
     
