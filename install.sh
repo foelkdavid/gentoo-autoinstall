@@ -169,14 +169,56 @@ chroot_preparation(){
 
 }
 
-# chroot(){
-# #     chroot /mnt/gentoo /bin/bash -- << EOCHROOT
-# #     source /etc/profile
-# #     export PS1="(chroot) ${PS1}"
-# #     # mount $BOOTPARTITION /boot
-# #     emerge-webrsync
-# #     emerge --verbose --update --deep --newuse @world
-# # EOCHROOT
+chroot(){
+    chroot /mnt/gentoo /bin/bash -- << EOCHROOT
+    echo "$BOOTPARTITION    /boot/efi    vfat    noauto    1 2" > /etc/fstab
+    echo "$SWAPPARTITION    none         swap    sw        0 0" >> /etc/fstab
+
+    echo 'EMERGE_DEFAULT_OPTS="--with-bdeps=y --keep-going=y"' >> /etc/portage/make.conf
+    echo 'GRUB_PLATFORMS="efi-64"'
+
+  cp /usr/share/portage/config/repos.conf /etc/portage/repos.conf
+  emerge --sync
+
+  echo "sys-kernel/gentoo-kernel-bin -initramfs" >> /etc/portage/package.use/gentoo-kernel-bin
+  emerge gentoo-kernel-bin
+  emerge --noreplace =gentoo-kernel-bin-6.1.46 
+  #TODO pin kernel or get autokernelver
+
+  echo "sys-boot/grub libzfs" >> /etc/portage/package.used
+
+  emerge bliss-initramfs grub zfs dhcpcd vim neofetch htop
+
+  grub-probe /boot 
+  grub-probe /boot/efi
+
+  mount -o remount,rw /sys/firmware/efi/efivars/  
+  grub-install --efi-directory /boot/efi
+  echo "set default=0" > /boot/grub/grub.cfg 
+  echo "set timeout=1" >> /boot/grub/grub.cfg 
+  echo "insmod part_gpt" >> /boot/grub/grub.cfg
+  echo "insmod fat" >> /boot/grub/grub.cfg
+  echo "insmod efi_gop" >> /boot/grub/grub.cfg
+  echo "insmod efi_uga" >> /boot/grub/grub.cfg
+
+  echo 'menuentry "Gentoo 6.1.46" {' >> /boot/grub/grub.cfg
+  echo 'linux /@/vmlinuz-6.1.46-gentoo-dist root=jacuzzi/os/main by=id elevator=noop quiet logo.nologo refresh' >> /boot/grub/grub.cfg
+  echo 'initrd /@/initrd-6.1.46-gentoo-dist' >> /boot/grub/grub.cfg
+  
+  #TODO include kernel modules here
+
+  bliss-initramfs -k 6.1.46-genoot-dist
+  mv initrd-6.1.46-gentoo-dist /boot
+
+  systemctl enable zfs.target
+  systemctl enable zfs-import-cache
+  systenctl enable zfs-mount
+  systemctl enable zfs-import.target
+  
+  passwd
+
+EOCHROOT
+
 # }
 
 
