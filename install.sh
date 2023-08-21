@@ -219,7 +219,7 @@ chroot(){
 
 EOCHROOT
 
-# }
+}
 
 
 rootcheck
@@ -237,3 +237,5 @@ setup_zfs
 create_swap
 
 chroot_preparation
+
+chroot
