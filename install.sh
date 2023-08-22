@@ -135,17 +135,10 @@ chroot_preparation_old(){
     mount --make-rslave sys
 }
 
-chroot_OLD(){
-    chroot /mnt/gentoo /bin/bash -- << EOCHROOT
-    source /etc/profile
-    export PS1="(chroot) ${PS1}"
-    # mount $BOOTPARTITION /boot
-    emerge-webrsync
-    emerge --verbose --update --deep --newuse @world
-EOCHROOT
-}
 
 chroot_preparation(){
+    chronyd -q
+    timedatectl set-timezone Europe/Vienna
     cd /mnt/gentoo
     mkdir boot/efi
     mount $EFIPARTITION boot/efi
@@ -232,6 +225,7 @@ networkcheck
 
 get_bootmode
 
+
 select_drive
 
 format_disk
@@ -244,4 +238,7 @@ chroot_preparation
 
 write_chroot_script
 
-#chroot
+chroot
+
+# TODO fix cannot change locale error
+# TODO set system time? 
