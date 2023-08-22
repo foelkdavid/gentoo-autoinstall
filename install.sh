@@ -169,58 +169,62 @@ chroot_preparation(){
 
 }
 
-chroot(){
-    chroot /mnt/gentoo /bin/bash -- << EOCHROOT
-    echo "$BOOTPARTITION    /boot/efi    vfat    noauto    1 2" > /etc/fstab
-    echo "$SWAPPARTITION    none         swap    sw        0 0" >> /etc/fstab
+write_chroot_script(){
+    TMPFILE=/mnt/gentoo/tmp/chroot.sh
+    echo "!#/bin/bash" > $TMPFILE
+    echo "echo '$BOOTPARTITION    /boot/efi    vfat    noauto    1 2' > /etc/fstab" >> $TMPFILE
+    echo "echo '$SWAPPARTITION    none         swap    sw        0 0' >> /etc/fstab" >> $TMPFILE
 
-    echo 'EMERGE_DEFAULT_OPTS="--with-bdeps=y --keep-going=y"' >> /etc/portage/make.conf
-    echo 'GRUB_PLATFORMS="efi-64"'
+    echo "echo 'EMERGE_DEFAULT_OPTS="--with-bdeps=y --keep-going=y"' >> /etc/portage/make.conf" >> $TMPFILE
+    echo "echo 'GRUB_PLATFORMS="efi-64"'" >> $TMPFILE
 
-  cp /usr/share/portage/config/repos.conf /etc/portage/repos.conf
-  emerge --sync
+    echo "cp /usr/share/portage/config/repos.conf /etc/portage/repos.conf" >> $TMPFILE
+    echo "emerge --sync" >> $TMPFILE
 
-  echo "sys-kernel/gentoo-kernel-bin -initramfs" >> /etc/portage/package.use/gentoo-kernel-bin
-  emerge gentoo-kernel-bin
-  emerge --noreplace =gentoo-kernel-bin-6.1.46 
-  #TODO pin kernel or get autokernelver
+    echo "echo 'sys-kernel/gentoo-kernel-bin -initramfs' >> /etc/portage/package.use/gentoo-kernel-bin" >> $TMPFILE
+    echo "emerge gentoo-kernel-bin" >> $TMPFILE
+    echo "emerge --noreplace =gentoo-kernel-bin-6.1.46 ">> $TMPFILE
+    #TODO pin kernel or get autokernelver
 
-  echo "sys-boot/grub libzfs" >> /etc/portage/package.used
+    echo "echo 'sys-boot/grub libzfs' >> /etc/portage/package.used" >> $TMPFILE
 
-  emerge bliss-initramfs grub zfs dhcpcd vim neofetch htop
+    echo "emerge bliss-initramfs grub zfs dhcpcd neovim neofetch htop" >> $TMPFILE
 
-  grub-probe /boot 
-  grub-probe /boot/efi
+    echo "grub-probe /boot" >> $TMPFILE
+    echo "grub-probe /boot/efi" >> $TMPFILE
 
-  mount -o remount,rw /sys/firmware/efi/efivars/  
-  grub-install --efi-directory /boot/efi
-  echo "set default=0" > /boot/grub/grub.cfg 
-  echo "set timeout=1" >> /boot/grub/grub.cfg 
-  echo "insmod part_gpt" >> /boot/grub/grub.cfg
-  echo "insmod fat" >> /boot/grub/grub.cfg
-  echo "insmod efi_gop" >> /boot/grub/grub.cfg
-  echo "insmod efi_uga" >> /boot/grub/grub.cfg
+    echo "mount -o remount,rw /sys/firmware/efi/efivars/  " >> $TMPFILE
+    echo "grub-install --efi-directory /boot/efi" >> $TMPFILE
+    echo "echo 'set default=0' > /boot/grub/grub.cfg " >> $TMPFILE
+    echo "echo 'set timeout=1' >> /boot/grub/grub.cfg " >> $TMPFILE
+    echo "echo 'insmod part_gpt' >> /boot/grub/grub.cfg" >> $TMPFILE
+    echo "echo 'insmod fat' >> /boot/grub/grub.cfg" >> $TMPFILE
+    echo "echo 'insmod efi_gop' >> /boot/grub/grub.cfg" >> $TMPFILE
+    echo "echo 'insmod efi_uga' >> /boot/grub/grub.cfg" >> $TMPFILE
 
-  echo 'menuentry "Gentoo 6.1.46" {' >> /boot/grub/grub.cfg
-  echo 'linux /@/vmlinuz-6.1.46-gentoo-dist root=jacuzzi/os/main by=id elevator=noop quiet logo.nologo refresh' >> /boot/grub/grub.cfg
-  echo 'initrd /@/initrd-6.1.46-gentoo-dist' >> /boot/grub/grub.cfg
-  
-  #TODO include kernel modules here
+    echo "echo "menuentry \"Gentoo 6.1.46\" {" >> /boot/grub/grub.cfg" >> $TMPFILE
+    echo "echo 'linux /@/vmlinuz-6.1.46-gentoo-dist root=jacuzzi/os/main by=id elevator=noop quiet logo.nologo refresh' >> /boot/grub/grub.cfg" >> $TMPFILE
+    echo "echo 'initrd /@/initrd-6.1.46-gentoo-dist' >> /boot/grub/grub.cfg" >> $TMPFILE
 
-  bliss-initramfs -k 6.1.46-genoot-dist
-  mv initrd-6.1.46-gentoo-dist /boot
+    #TODO include kernel modules here
 
-  systemctl enable zfs.target
-  systemctl enable zfs-import-cache
-  systenctl enable zfs-mount
-  systemctl enable zfs-import.target
-  
-  passwd
+    echo "bliss-initramfs -k 6.1.46-genoot-dist" >> $TMPFILE
+    echo "mv initrd-6.1.46-gentoo-dist /boot" >> $TMPFILE
 
-EOCHROOT
+    echo "systemctl enable zfs.target" >> $TMPFILE
+    echo "systemctl enable zfs-import-cache" >> $TMPFILE
+    echo "systenctl enable zfs-mount" >> $TMPFILE
+    echo "systemctl enable zfs-import.target" >> $TMPFILE
+
+    echo "passwd" >> $TMPFILE
 
 }
 
+chroot(){
+    chmod +x /mnt/gentoo/tmp/chroot.sh
+    chroot /mnt/gentoo /tmp/chroot.sh
+    echo "Done"
+}
 
 rootcheck
 
@@ -238,4 +242,6 @@ create_swap
 
 chroot_preparation
 
-chroot
+write_chroot_script
+
+#chroot
