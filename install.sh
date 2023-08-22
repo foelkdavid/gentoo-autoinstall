@@ -226,21 +226,21 @@ chroot(){
     echo "Done"
 }
 
-#rootcheck
+rootcheck
 
-#networkcheck
+networkcheck
 
-#get_bootmode
+get_bootmode
 
-#select_drive
+select_drive
 
-#format_disk
+format_disk
 
-#setup_zfs
+setup_zfs
 
-#create_swap
+create_swap
 
-#chroot_preparation
+chroot_preparation
 
 write_chroot_script
 
