@@ -170,13 +170,13 @@ chroot_preparation(){
 }
 
 write_chroot_script(){
-    TMPFILE=/mnt/gentoo/tmp/chroot.sh
+    TMPFILE=TMPFILE.sh
     echo "!#/bin/bash" > $TMPFILE
     echo "echo '$BOOTPARTITION    /boot/efi    vfat    noauto    1 2' > /etc/fstab" >> $TMPFILE
     echo "echo '$SWAPPARTITION    none         swap    sw        0 0' >> /etc/fstab" >> $TMPFILE
 
-    echo "echo 'EMERGE_DEFAULT_OPTS="--with-bdeps=y --keep-going=y"' >> /etc/portage/make.conf" >> $TMPFILE
-    echo "echo 'GRUB_PLATFORMS="efi-64"'" >> $TMPFILE
+    echo "echo 'EMERGE_DEFAULT_OPTS=\"--with-bdeps=y --keep-going=y\"' >> /etc/portage/make.conf" >> $TMPFILE
+    echo "echo 'GRUB_PLATFORMS=\"efi-64\"' >> /etc/portage/make.conf" >> $TMPFILE
 
     echo "cp /usr/share/portage/config/repos.conf /etc/portage/repos.conf" >> $TMPFILE
     echo "emerge --sync" >> $TMPFILE
@@ -202,7 +202,7 @@ write_chroot_script(){
     echo "echo 'insmod efi_gop' >> /boot/grub/grub.cfg" >> $TMPFILE
     echo "echo 'insmod efi_uga' >> /boot/grub/grub.cfg" >> $TMPFILE
 
-    echo "echo "menuentry \"Gentoo 6.1.46\" {" >> /boot/grub/grub.cfg" >> $TMPFILE
+    echo "echo 'menuentry \"Gentoo 6.1.46\" {' >> /boot/grub/grub.cfg" >> $TMPFILE
     echo "echo 'linux /@/vmlinuz-6.1.46-gentoo-dist root=jacuzzi/os/main by=id elevator=noop quiet logo.nologo refresh' >> /boot/grub/grub.cfg" >> $TMPFILE
     echo "echo 'initrd /@/initrd-6.1.46-gentoo-dist' >> /boot/grub/grub.cfg" >> $TMPFILE
 
@@ -226,21 +226,21 @@ chroot(){
     echo "Done"
 }
 
-rootcheck
+#rootcheck
 
-networkcheck
+#networkcheck
 
-get_bootmode
+#get_bootmode
 
-select_drive
+#select_drive
 
-format_disk
+#format_disk
 
-setup_zfs
+#setup_zfs
 
-create_swap
+#create_swap
 
-chroot_preparation
+#chroot_preparation
 
 write_chroot_script
 
