@@ -162,7 +162,7 @@ chroot_preparation(){
 }
 
 write_chroot_script(){
-    TMPFILE=TMPFILE.sh
+    TMPFILE=/mnt/gentoo/tmp/chroot.sh
     echo "#!/bin/bash" > $TMPFILE
     echo "echo '$BOOTPARTITION    /boot/efi    vfat    noauto    1 2' > /etc/fstab" >> $TMPFILE
     echo "echo '$SWAPPARTITION    none         swap    sw        0 0' >> /etc/fstab" >> $TMPFILE
