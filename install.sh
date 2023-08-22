@@ -175,7 +175,7 @@ write_chroot_script(){
     echo "echo '$BOOTPARTITION    /boot/efi    vfat    noauto    1 2' > /etc/fstab" >> $TMPFILE
     echo "echo '$SWAPPARTITION    none         swap    sw        0 0' >> /etc/fstab" >> $TMPFILE
 
-    echo "echo 'EMERGE_DEFAULT_OPTS=\"--with-bdeps=y --keep-going=y\"' >> /etc/portage/make.conf" >> $TMPFILE
+    echo "echo 'EMERGE_DEFAULT_OPTS=\"--with-bdeps=y --keep-going=y --quiet-build=y\"' >> /etc/portage/make.conf" >> $TMPFILE
     echo "echo 'GRUB_PLATFORMS=\"efi-64\"' >> /etc/portage/make.conf" >> $TMPFILE
 
     echo "cp /usr/share/portage/config/repos.conf /etc/portage/repos.conf" >> $TMPFILE
