@@ -219,25 +219,34 @@ chroot(){
 }
 
 rootcheck
+echo "rootecheck done"
 
 networkcheck
+echo "networkcheck done"
 
 get_bootmode
-
+echo "get_bootmode done"
 
 select_drive
+echo "select_drive done"
 
 format_disk
+echo "format_drive done"
 
 setup_zfs
+echo "setup_zfs done"
 
 create_swap
+echo "create_swap done"
 
 chroot_preparation
+echo "chroot_preparation_done"
 
 write_chroot_script
+echo "write_chroot_script done"
 
 chroot
+echo "all done"
 
 # TODO fix cannot change locale error
 # TODO set system time? 
