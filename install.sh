@@ -179,7 +179,7 @@ write_chroot_script(){
     echo "echo 'GRUB_PLATFORMS=\"efi-64\"' >> /etc/portage/make.conf" >> $TMPFILE
 
     echo "cp /usr/share/portage/config/repos.conf /etc/portage/repos.conf" >> $TMPFILE
-    echo "emerge --sync" >> $TMPFILE
+    echo "emerge --sync --quiet" >> $TMPFILE
 
     echo "echo 'sys-kernel/gentoo-kernel-bin -initramfs' >> /etc/portage/package.use/gentoo-kernel-bin" >> $TMPFILE
     echo "emerge gentoo-kernel-bin" >> $TMPFILE
