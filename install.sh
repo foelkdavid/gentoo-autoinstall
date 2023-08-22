@@ -138,7 +138,6 @@ chroot_preparation_old(){
 
 chroot_preparation(){
     chronyd -q
-    timedatectl set-timezone Europe/Vienna
     cd /mnt/gentoo
     mkdir boot/efi
     mount $EFIPARTITION boot/efi
