@@ -164,7 +164,7 @@ chroot_preparation(){
 write_chroot_script(){
     TMPFILE=/mnt/gentoo/tmp/chroot.sh
     echo "#!/bin/bash" > $TMPFILE
-    echo "echo '$BOOTPARTITION    /boot/efi    vfat    noauto    1 2' > /etc/fstab" >> $TMPFILE
+    echo "echo '$EFIPARTITION    /boot/efi    vfat    noauto    1 2' > /etc/fstab" >> $TMPFILE
     echo "echo '$SWAPPARTITION    none         swap    sw        0 0' >> /etc/fstab" >> $TMPFILE
 
     echo "echo 'EMERGE_DEFAULT_OPTS=\"--with-bdeps=y --keep-going=y --quiet-build=y\"' >> /etc/portage/make.conf" >> $TMPFILE
@@ -180,7 +180,7 @@ write_chroot_script(){
 
     echo "echo 'sys-boot/grub libzfs' >> /etc/portage/package.used" >> $TMPFILE
 
-    echo "emerge bliss-initramfs grub zfs dhcpcd neovim neofetch htop" >> $TMPFILE
+    echo "emerge bliss-initramfs grub zfs dhcpcd neovim busybox neofetch htop" >> $TMPFILE
 
     echo "grub-probe /boot" >> $TMPFILE
     echo "grub-probe /boot/efi" >> $TMPFILE
@@ -200,7 +200,7 @@ write_chroot_script(){
 
     #TODO include kernel modules here
 
-    echo "bliss-initramfs -k 6.1.46-genoot-dist" >> $TMPFILE
+    echo "bliss-initramfs -k 6.1.46-gentoo-dist" >> $TMPFILE
     echo "mv initrd-6.1.46-gentoo-dist /boot" >> $TMPFILE
 
     echo "systemctl enable zfs.target" >> $TMPFILE
@@ -245,7 +245,7 @@ echo "chroot_preparation_done"
 write_chroot_script
 echo "write_chroot_script done"
 
-chroot
+#chroot
 echo "all done"
 
 # TODO fix cannot change locale error
