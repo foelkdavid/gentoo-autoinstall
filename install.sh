@@ -195,7 +195,7 @@ write_chroot_script(){
     echo "echo 'insmod efi_uga' >> /boot/grub/grub.cfg" >> $TMPFILE
 
     echo "echo 'menuentry \"Gentoo 6.1.46\" {' >> /boot/grub/grub.cfg" >> $TMPFILE
-    echo "echo 'linux /@/vmlinuz-6.1.46-gentoo-dist root=jacuzzi/os/main by=id elevator=noop quiet logo.nologo refresh' >> /boot/grub/grub.cfg" >> $TMPFILE
+    echo "echo 'linux /@/vmlinuz-6.1.46-gentoo-dist root=jacuzzi/os/main by=id elevator=noop quiet logo.nologo encrypted refresh' >> /boot/grub/grub.cfg" >> $TMPFILE
     echo "echo 'initrd /@/initrd-6.1.46-gentoo-dist' >> /boot/grub/grub.cfg" >> $TMPFILE
 
     #TODO include kernel modules here
