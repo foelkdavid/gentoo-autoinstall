@@ -178,7 +178,7 @@ write_chroot_script(){
     echo "emerge --noreplace =gentoo-kernel-bin-6.1.46 ">> $TMPFILE
     #TODO pin kernel or get autokernelver
 
-    echo "echo 'sys-boot/grub libzfs' >> /etc/portage/package.used" >> $TMPFILE
+    echo "echo 'sys-boot/grub libzfs' >> /etc/portage/package.use/grub" >> $TMPFILE
 
     echo "emerge bliss-initramfs grub zfs dhcpcd neovim busybox neofetch htop" >> $TMPFILE
 
