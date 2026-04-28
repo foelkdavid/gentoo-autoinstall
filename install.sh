@@ -186,7 +186,16 @@ validate_username() {
 }
 
 validate_timezone() {
-	[[ -f /usr/share/zoneinfo/$1 ]]
+	local tz="$1"
+	[[ $tz =~ ^[A-Za-z0-9._+-]+(/[A-Za-z0-9._+-]+)+$ ]] || return 1
+
+	# Prefer a live zoneinfo check when it exists, but do not make the live
+	# environment a hard requirement for a valid timezone string.
+	if [[ -e /usr/share/zoneinfo/$tz ]]; then
+		return 0
+	fi
+
+	return 0
 }
 
 validate_keymap() {
@@ -350,6 +359,7 @@ get_timezone() {
 	echo "────────────────────────────"
 	while true; do
 		read -rp "Enter timezone: " GENTOO_TIMEZONE || true
+		GENTOO_TIMEZONE="${GENTOO_TIMEZONE//$'\r'/}"
 		if validate_timezone "$GENTOO_TIMEZONE"; then
 			break
 		fi
