@@ -903,6 +903,14 @@ sync_portage_tree() {
 	ok "Portage snapshot updated"
 }
 
+bootstrap_binhost_keys() {
+	info "[Bootstrapping binhost trust keys]"
+	xchroot /bin/bash -lc 'command -v getuto >/dev/null 2>&1 || emerge --verbose --oneshot app-portage/getuto' \
+		|| die "Failed to install app-portage/getuto"
+	xchroot /bin/bash -lc 'getuto' || die "getuto failed to seed /etc/portage/gnupg"
+	ok "Binhost trust keys installed"
+}
+
 set_profile() {
 	info "[Selecting profile ${GENTOO_PROFILE}]"
 	xchroot eselect profile set "$GENTOO_PROFILE" >/dev/null || die "Failed to set profile ${GENTOO_PROFILE}"
@@ -1154,6 +1162,7 @@ run_install() {
 	mount_esp_partitions
 	sync_portage_tree
 	set_profile
+	bootstrap_binhost_keys
 	emerge_common_packages
 	configure_system_basics
 	install_kernel_and_zfs
