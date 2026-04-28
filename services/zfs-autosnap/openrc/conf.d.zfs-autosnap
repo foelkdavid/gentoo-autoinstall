@@ -1,0 +1,10 @@
+# Tick interval in seconds. The dispatcher wakes up every INTERVAL
+# seconds and runs any jobs whose schedule slot has been reached.
+# Default 300s (5 minutes) is plenty for hourly/daily jobs.
+INTERVAL=300
+
+# Path to the jobs definition file.
+JOBS="/etc/zfs-autosnap/jobs.conf"
+
+# Where the per-job last-run timestamps are kept.
+STATE="/var/lib/zfs-autosnap"

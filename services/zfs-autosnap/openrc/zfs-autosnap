@@ -1,0 +1,13 @@
+#!/sbin/openrc-run
+
+description="Periodic ZFS snapshot dispatcher"
+command="/usr/local/bin/zfs-autosnap.sh"
+command_background="yes"
+pidfile="/run/${RC_SVCNAME}.pid"
+output_log="/var/log/zfs-autosnap.log"
+error_log="/var/log/zfs-autosnap.log"
+
+depend() {
+	need localmount
+	after zfs-mount
+}

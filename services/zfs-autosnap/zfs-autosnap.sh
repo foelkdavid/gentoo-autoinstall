@@ -2,8 +2,9 @@
 
 set -eu
 
-JOBS="/etc/zfs-autosnap/jobs.conf"
-STATE="/var/lib/zfs-autosnap"
+JOBS="${JOBS:-/etc/zfs-autosnap/jobs.conf}"
+STATE="${STATE:-/var/lib/zfs-autosnap}"
+INTERVAL="${INTERVAL:-300}"
 
 mkdir -p "$STATE"
 
@@ -90,19 +91,37 @@ run_job() {
 		| xargs -r -n1 zfs destroy
 }
 
-grep -v '^[[:space:]]*\(#\|$\)' "$JOBS" | while IFS='|' read -r name dataset label sched keep slack flags; do
-	name=$(printf '%s' "$name" | trim)
-	dataset=$(printf '%s' "$dataset" | trim)
-	label=$(printf '%s' "$label" | trim)
-	sched=$(printf '%s' "$sched" | trim)
-	keep=$(printf '%s' "$keep" | trim)
-	slack=$(printf '%s' "$slack" | trim)
-	flags=$(printf '%s' "$flags" | trim)
+dispatch_once() {
+	[ -r "$JOBS" ] || {
+		echo "[WARN] $JOBS not readable, skipping tick" >&2
+		return 0
+	}
 
-	tf="$STATE/${name}.timefile"
-	init_timefile "$tf"
+	grep -v '^[[:space:]]*\(#\|$\)' "$JOBS" | while IFS='|' read -r name dataset label sched keep slack flags; do
+		name=$(printf '%s' "$name" | trim)
+		dataset=$(printf '%s' "$dataset" | trim)
+		label=$(printf '%s' "$label" | trim)
+		sched=$(printf '%s' "$sched" | trim)
+		keep=$(printf '%s' "$keep" | trim)
+		slack=$(printf '%s' "$slack" | trim)
+		flags=$(printf '%s' "$flags" | trim)
 
-	if should_run "$sched" "$tf" "$slack"; then
-		run_job "$name" "$dataset" "$label" "$keep" "$flags" "$tf"
-	fi
+		[ -n "$name" ] || continue
+
+		tf="$STATE/${name}.timefile"
+		init_timefile "$tf"
+
+		if should_run "$sched" "$tf" "$slack"; then
+			run_job "$name" "$dataset" "$label" "$keep" "$flags" "$tf" || \
+				echo "[WARN] job $name failed" >&2
+		fi
+	done
+}
+
+trap 'echo "[INFO] zfs-autosnap stopping"; exit 0' INT TERM
+
+echo "[INFO] zfs-autosnap starting (interval=${INTERVAL}s, jobs=$JOBS)"
+while :; do
+	dispatch_once
+	sleep "$INTERVAL"
 done

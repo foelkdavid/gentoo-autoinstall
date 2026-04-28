@@ -130,8 +130,9 @@ servicecheck() {
 		"services/efisync/openrc/efisync"
 		"services/efisync/openrc/conf.d.efisync"
 		"services/zfs-autosnap/jobs.conf"
-		"services/zfs-autosnap/zfs-autosnap-dispatch.sh"
-		"services/zfs-autosnap/cron/zfs-autosnap"
+		"services/zfs-autosnap/zfs-autosnap.sh"
+		"services/zfs-autosnap/openrc/zfs-autosnap"
+		"services/zfs-autosnap/openrc/conf.d.zfs-autosnap"
 	)
 	local f
 	for f in "${files[@]}"; do
@@ -912,8 +913,7 @@ emerge_common_packages() {
 			sys-fs/inotify-tools \
 			sys-kernel/dracut \
 			sys-kernel/installkernel \
-			sys-kernel/linux-firmware \
-			sys-process/cronie
+			sys-kernel/linux-firmware
 	' || die "Failed to install base packages"
 	ok "Base packages installed"
 }
@@ -1040,7 +1040,6 @@ configure_openrc_services() {
 	xchroot rc-update add zfs-share default >/dev/null || true
 	xchroot rc-update add zfs-zed default >/dev/null || true
 	xchroot rc-update add dhcpcd default >/dev/null || die "Failed to enable dhcpcd"
-	xchroot rc-update add cronie default >/dev/null || die "Failed to enable cronie"
 
 	ok "OpenRC services enabled"
 }
@@ -1096,11 +1095,14 @@ install_efisync_assets() {
 }
 
 install_autosnap_assets() {
-	info "[Installing ZFS autosnapshot assets]"
-	install -Dm755 "$SCRIPT_DIR/services/zfs-autosnap/zfs-autosnap-dispatch.sh" "$TARGET_MNT/usr/local/bin/zfs-autosnap-dispatch.sh"
+	info "[Installing ZFS autosnapshot service]"
+	install -Dm755 "$SCRIPT_DIR/services/zfs-autosnap/zfs-autosnap.sh" "$TARGET_MNT/usr/local/bin/zfs-autosnap.sh"
 	install -Dm644 "$SCRIPT_DIR/services/zfs-autosnap/jobs.conf" "$TARGET_MNT/etc/zfs-autosnap/jobs.conf"
-	install -Dm644 "$SCRIPT_DIR/services/zfs-autosnap/cron/zfs-autosnap" "$TARGET_MNT/etc/cron.d/zfs-autosnap"
-	ok "Autosnapshot dispatcher installed"
+	install -Dm755 "$SCRIPT_DIR/services/zfs-autosnap/openrc/zfs-autosnap" "$TARGET_MNT/etc/init.d/zfs-autosnap"
+	install -Dm644 "$SCRIPT_DIR/services/zfs-autosnap/openrc/conf.d.zfs-autosnap" "$TARGET_MNT/etc/conf.d/zfs-autosnap"
+
+	xchroot rc-update add zfs-autosnap default >/dev/null || die "Failed to enable zfs-autosnap"
+	ok "Autosnapshot service installed and enabled"
 }
 
 finalize_install() {
@@ -1119,7 +1121,7 @@ finalize_install() {
 	if [[ ${GENTOO_MIRROR:-false} == true ]]; then
 		note "Primary and secondary ESPs were synced once and efisync was enabled."
 	fi
-	note "cronie is enabled and will run the ZFS autosnapshot dispatcher."
+	note "zfs-autosnap OpenRC service is enabled and will dispatch periodic snapshots."
 }
 
 run_install() {
