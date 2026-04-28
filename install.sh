@@ -711,14 +711,23 @@ verify_stage3() {
 
 	filename="$(basename "$archive")"
 
-	hash="$(awk -v f="$filename" '$NF == f && length($1) == 128 { print $1; exit }' "$digest_file")"
+	hash="$(awk -v f="$filename" '
+		/^# SHA512 HASH/ { algo = "sha512"; next }
+		/^# SHA256 HASH/ { algo = "sha256"; next }
+		/^# / { algo = ""; next }
+		algo == "sha512" && $NF == f && length($1) == 128 { print $1; exit }
+	' "$digest_file")"
 	if [[ -n $hash ]]; then
 		printf "%s  %s\n" "$hash" "$archive" | sha512sum -c - >/dev/null || die "SHA512 verification failed for $filename"
 		ok "Verified stage3 with SHA512"
 		return 0
 	fi
 
-	hash="$(awk -v f="$filename" '$NF == f && length($1) == 64 { print $1; exit }' "$digest_file")"
+	hash="$(awk -v f="$filename" '
+		/^# SHA256 HASH/ { algo = "sha256"; next }
+		/^# / { algo = ""; next }
+		algo == "sha256" && $NF == f && length($1) == 64 { print $1; exit }
+	' "$digest_file")"
 	if [[ -n $hash ]]; then
 		printf "%s  %s\n" "$hash" "$archive" | sha256sum -c - >/dev/null || die "SHA256 verification failed for $filename"
 		ok "Verified stage3 with SHA256"
