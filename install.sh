@@ -732,7 +732,7 @@ download_stage3() {
 	info "[Downloading latest Gentoo stage3]"
 
 	local latest_rel stage3_file stage3_url archive_path digest_path
-	latest_rel="$(curl -fsSL "${GENTOO_STAGE3_BASE}/${GENTOO_STAGE3_LATEST}" | awk '$1 !~ /^#/ { path = $1 } END { print path }')"
+	latest_rel="$(curl -fsSL "${GENTOO_STAGE3_BASE}/${GENTOO_STAGE3_LATEST}" | awk '/\.tar\.(xz|bz2)/ && $1 !~ /^[#-]/ { print $1; exit }')"
 	[[ -n $latest_rel ]] || die "Failed to resolve the latest stage3 path"
 
 	stage3_file="$(basename "$latest_rel")"
