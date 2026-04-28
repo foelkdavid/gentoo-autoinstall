@@ -52,6 +52,7 @@ cleanup() {
 	fi
 
 	if [[ $POOL_IMPORTED -eq 1 ]]; then
+		zfs unmount -a >/dev/null 2>&1 || true
 		zpool export zroot >/dev/null 2>&1 || true
 	fi
 
@@ -602,8 +603,11 @@ partition_disks() {
 }
 
 create_zpool() {
+	zgenhostid -f >/dev/null
+
 	local pool_args=(
 		-o ashift=12
+		-o autotrim=on
 		-O acltype=posixacl
 		-O compression=zstd
 		-O dnodesize=auto
@@ -611,6 +615,7 @@ create_zpool() {
 		-O normalization=formD
 		-O relatime=on
 		-O xattr=sa
+		-R "$TARGET_MNT"
 	)
 
 	local pool_devices=(
@@ -623,8 +628,8 @@ create_zpool() {
 		)
 	fi
 
+	local keyfile=""
 	if [[ ${GENTOO_ENCRYPT:-false} == true ]]; then
-		local keyfile
 		keyfile="$(mktemp)"
 		chmod 600 "$keyfile"
 		printf '%s\n' "$GENTOO_ZFS_PASSPHRASE" >"$keyfile"
@@ -634,51 +639,40 @@ create_zpool() {
 			-O keyformat=passphrase
 			-O "keylocation=file://$keyfile"
 		)
+	fi
 
-		if [[ ${GENTOO_MIRROR:-false} == true ]]; then
-			zpool create -f "${pool_args[@]}" zroot mirror "${pool_devices[@]}" >/dev/null || die "Failed to create encrypted mirrored zpool"
-		else
-			zpool create -f "${pool_args[@]}" zroot "${pool_devices[@]}" >/dev/null || die "Failed to create encrypted zpool"
-		fi
+	if [[ ${GENTOO_MIRROR:-false} == true ]]; then
+		zpool create -f "${pool_args[@]}" zroot mirror "${pool_devices[@]}" >/dev/null || die "Failed to create mirrored zpool"
+	else
+		zpool create -f "${pool_args[@]}" zroot "${pool_devices[@]}" >/dev/null || die "Failed to create zpool"
+	fi
+	POOL_IMPORTED=1
 
-		zpool export zroot
-		zpool import -N -R "$TARGET_MNT" zroot
-		POOL_IMPORTED=1
-		zfs load-key -L "file://$keyfile" zroot >/dev/null || die "Failed to load encrypted pool key"
+	if [[ ${GENTOO_ENCRYPT:-false} == true ]]; then
 		zfs set keylocation=prompt zroot
 		rm -f "$keyfile"
 		unset GENTOO_ZFS_PASSPHRASE
-	else
-		if [[ ${GENTOO_MIRROR:-false} == true ]]; then
-			zpool create -f "${pool_args[@]}" zroot mirror "${pool_devices[@]}" >/dev/null || die "Failed to create mirrored zpool"
-		else
-			zpool create -f "${pool_args[@]}" zroot "${pool_devices[@]}" >/dev/null || die "Failed to create zpool"
-		fi
-
-		zpool export zroot
-		zpool import -N -R "$TARGET_MNT" zroot
-		POOL_IMPORTED=1
 	fi
 
-	ok "Created and imported zroot"
+	ok "Created zroot pool"
 }
 
 create_datasets() {
 	info "[Creating ZFS datasets]"
 	zfs create -o mountpoint=none zroot/ROOT >/dev/null || die "Failed to create zroot/ROOT"
 	zfs create -o mountpoint=/ -o canmount=noauto "$TARGET_ROOT_DATASET" >/dev/null || die "Failed to create $TARGET_ROOT_DATASET"
-	zfs create -o mountpoint=/home zroot/home >/dev/null || die "Failed to create zroot/home"
+	zfs create -o mountpoint=/home -o canmount=noauto zroot/home >/dev/null || die "Failed to create zroot/home"
 	zpool set bootfs="$TARGET_ROOT_DATASET" zroot
 	zfs set org.zfsbootmenu:commandline="quiet loglevel=4" zroot/ROOT
 
-	zgenhostid -f >/dev/null
+	zfs mount "$TARGET_ROOT_DATASET" || die "Failed to mount root dataset"
+	zfs mount zroot/home || die "Failed to mount home dataset"
+	CLEANUP_ACTIVE=1
+
 	mkdir -p "$TARGET_MNT/etc/zfs"
 	cp /etc/hostid "$TARGET_MNT/etc/hostid"
 	zpool set cachefile="$TARGET_MNT/etc/zfs/zpool.cache" zroot
 
-	zfs mount "$TARGET_ROOT_DATASET"
-	zfs mount zroot/home
-	CLEANUP_ACTIVE=1
 	ok "Mounted root datasets under $TARGET_MNT"
 }
 
@@ -749,7 +743,7 @@ download_stage3() {
 	detect_digest_file "$stage3_url" "$digest_path" || die "Failed to download stage3 digest file"
 	verify_stage3 "$archive_path" "$digest_path"
 
-	tar xpf "$archive_path" --xattrs-include='*.*' --numeric-owner --directory "$TARGET_MNT" || die "Failed to extract stage3"
+	tar xpf "$archive_path" --xattrs --xattrs-include='*.*' --numeric-owner --directory "$TARGET_MNT" || die "Failed to extract stage3"
 	ok "Extracted stage3 into $TARGET_MNT"
 }
 
@@ -799,7 +793,7 @@ EOF
 	fi
 
 	cat >"$TARGET_MNT/etc/portage/package.use/installkernel" <<'EOF'
-sys-kernel/installkernel dracut
+sys-kernel/installkernel dracut -systemd
 EOF
 
 	if kernel_plan_has_mode gentoo-kernel; then
@@ -990,16 +984,19 @@ install_kernel_and_zfs() {
 	done
 
 	if [[ ${#dist_kernel_pkgs[@]} -gt 0 ]]; then
-		info "[Installing distribution kernels]"
-		xchroot /bin/bash -lc "emerge --verbose --getbinpkg ${dist_kernel_pkgs[*]}" || die "Failed to install selected distribution kernels"
-
-		info "[Installing ZFS for distribution kernels]"
-		xchroot /bin/bash -lc 'emerge --verbose --getbinpkg sys-fs/zfs' || die "Failed to install sys-fs/zfs for distribution kernels"
+		info "[Installing distribution kernels and ZFS]"
+		xchroot /bin/bash -lc "emerge --verbose --getbinpkg sys-fs/zfs ${dist_kernel_pkgs[*]}" || die "Failed to install distribution kernels and sys-fs/zfs"
 	fi
 
 	if [[ ${#manual_entries[@]} -gt 0 ]]; then
-		local idx=1
 		install_manual_kernel_sources
+
+		if [[ ${#dist_kernel_pkgs[@]} -eq 0 ]]; then
+			info "[Installing ZFS userspace before manual kernel build]"
+			xchroot /bin/bash -lc 'emerge --verbose --getbinpkg sys-fs/zfs' || die "Failed to install sys-fs/zfs"
+		fi
+
+		local idx=1
 		for entry in "${manual_entries[@]}"; do
 			cfg="${entry#*|}"
 			build_manual_kernel "$cfg" "-manual${idx}"
