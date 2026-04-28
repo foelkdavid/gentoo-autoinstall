@@ -1,0 +1,11 @@
+#!/sbin/openrc-run
+
+description="Continuously sync the primary EFI partition to the mirrored EFI partition"
+command="/usr/local/bin/efisync.sh"
+command_background="yes"
+pidfile="/run/${RC_SVCNAME}.pid"
+
+depend() {
+	need localmount
+	after zfs-mount
+}
